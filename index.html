@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profesyonel Bütçe Takip Widget</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        
+        .widget-shadow {
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        }
+        
+        .card-shadow {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .income-gradient {
+            background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%);
+        }
+        
+        .expense-gradient {
+            background: linear-gradient(135deg, #f87171 0%, #ef4444 100%);
+        }
+        
+        .balance-gradient {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+        }
+        
+        .animate-slide-up {
+            animation: slideUp 0.3s ease-out;
+        }
+        
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .transaction-item {
+            transition: all 0.2s ease;
+        }
+        
+        .transaction-item:hover {
+            transform: translateX(4px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            transition: all 0.2s ease;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 25px rgba(59, 130, 246, 0.4);
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen p-4">
+    <div class="max-w-6xl mx-auto">
+        <!-- Header -->
+        <div class="gradient-bg rounded-2xl widget-shadow p-8 mb-8 text-white">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                    <h1 class="text-4xl font-bold mb-2" id="mainTitle">💰 Bütçe Takip Sistemi</h1>
+                    <p class="text-blue-100 text-lg" id="mainSubtitle">Gelir ve giderlerinizi profesyonelce yönetin</p>
+                </div>
+                
+                <!-- Language & Currency Selector -->
+                <div class="flex flex-col sm:flex-row gap-3">
+                    <select id="languageSelect" class="bg-white/20 backdrop-blur-sm text-white rounded-xl px-4 py-2 border border-white/30 focus:outline-none focus:ring-2 focus:ring-white/50">
+                        <option value="tr">🇹🇷 Türkçe</option>
+                        <option value="en">🇺🇸 English</option>
+                        <option value="de">🇩🇪 Deutsch</option>
+                    </select>
+                    
+                    <select id="currencySelect" class="bg-white/20 backdrop-blur-sm text-white rounded-xl px-4 py-2 border border-white/30 focus:outline-none focus:ring-2 focus:ring-white/50">
+                        <option value="TRY">₺ TRY</option>
+                        <option value="EUR">€ EUR</option>
+                        <option value="USD">$ USD</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Summary Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div class="income-gradient rounded-2xl p-6 text-white card-shadow">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold" id="incomeTitle">Toplam Gelir</h3>
+                    <div class="bg-white/20 rounded-full p-2">
+                        <span class="text-2xl">📈</span>
+                    </div>
+                </div>
+                <p class="text-3xl font-bold" id="totalIncome">₺0.00</p>
+            </div>
+            
+            <div class="expense-gradient rounded-2xl p-6 text-white card-shadow">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold" id="expenseTitle">Toplam Gider</h3>
+                    <div class="bg-white/20 rounded-full p-2">
+                        <span class="text-2xl">📉</span>
+                    </div>
+                </div>
+                <p class="text-3xl font-bold" id="totalExpense">₺0.00</p>
+            </div>
+            
+            <div class="balance-gradient rounded-2xl p-6 text-white card-shadow">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold" id="balanceTitle">Net Bakiye</h3>
+                    <div class="bg-white/20 rounded-full p-2">
+                        <span class="text-2xl">💎</span>
+                    </div>
+                </div>
+                <p class="text-3xl font-bold" id="netBalance">₺0.00</p>
+            </div>
+            
+            <div class="bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl p-6 text-white card-shadow">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold" id="dailyAverageTitle">Günlük Ortalama</h3>
+                    <div class="bg-white/20 rounded-full p-2">
+                        <span class="text-2xl">📊</span>
+                    </div>
+                </div>
+                <p class="text-3xl font-bold" id="dailyAverage">₺0.00</p>
+            </div>
+        </div>
+        
+        <!-- Bank Accounts & Debts -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <!-- Bank Accounts -->
+            <div class="bg-white rounded-2xl widget-shadow p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-bold text-gray-800" id="accountsTitle">Hesaplar</h3>
+                    <button id="addAccountBtn" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                        <span id="addAccountText">+ Hesap Ekle</span>
+                    </button>
+                </div>
+                <div id="accountsList" class="space-y-3">
+                    <div class="text-center text-gray-500 py-4">
+                        <span class="text-2xl mb-2 block">🏦</span>
+                        <p id="noAccountsText">Henüz hesap eklenmemiş</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Debts -->
+            <div class="bg-white rounded-2xl widget-shadow p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-bold text-gray-800" id="debtsTitle">Borçlar</h3>
+                    <button id="addDebtBtn" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                        <span id="addDebtText">+ Borç Ekle</span>
+                    </button>
+                </div>
+                <div id="debtsList" class="space-y-3">
+                    <div class="text-center text-gray-500 py-4">
+                        <span class="text-2xl mb-2 block">💳</span>
+                        <p id="noDebtsText">Borç bulunmuyor</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Add Transaction Form -->
+        <div class="bg-white rounded-2xl widget-shadow p-8 mb-8">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-800" id="addTransactionTitle">Yeni İşlem Ekle</h2>
+                <div class="flex gap-2">
+                    <button id="recurringBtn" class="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                        <span id="recurringText">🔄 Sabit İşlem</span>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2" id="descriptionLabel">Açıklama</label>
+                    <input type="text" id="description" placeholder="İşlem açıklaması..." class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2" id="amountLabel">Tutar</label>
+                    <input type="number" id="amount" placeholder="0.00" step="0.01" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2" id="typeLabel">Tür</label>
+                    <select id="type" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <option value="income" id="incomeOption">Gelir</option>
+                        <option value="expense" id="expenseOption">Gider</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2" id="categoryLabel">Kategori</label>
+                    <select id="category" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <option value="salary" id="salaryOption">Maaş</option>
+                        <option value="food" id="foodOption">Yemek</option>
+                        <option value="transport" id="transportOption">Ulaşım</option>
+                        <option value="entertainment" id="entertainmentOption">Eğlence</option>
+                        <option value="bills" id="billsOption">Faturalar</option>
+                        <option value="other" id="otherOption">Diğer</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2" id="accountLabel">Hesap</label>
+                    <select id="accountSelect" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <option value="cash" id="cashOption">💵 Nakit</option>
+                    </select>
+                </div>
+                
+                <div id="recurringOptions" class="hidden">
+                    <label class="block text-sm font-medium text-gray-700 mb-2" id="frequencyLabel">Sıklık</label>
+                    <select id="frequency" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <option value="monthly" id="monthlyOption">Aylık</option>
+                        <option value="weekly" id="weeklyOption">Haftalık</option>
+                        <option value="daily" id="dailyOption">Günlük</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="flex flex-col sm:flex-row gap-3">
+                <button id="addTransaction" class="btn-primary text-white px-8 py-3 rounded-xl font-semibold shadow-lg">
+                    <span id="addButtonText">➕ İşlem Ekle</span>
+                </button>
+                <button id="addRecurring" class="hidden bg-purple-500 hover:bg-purple-600 text-white px-8 py-3 rounded-xl font-semibold shadow-lg">
+                    <span id="addRecurringText">🔄 Sabit İşlem Ekle</span>
+                </button>
+            </div>
+        </div>
+        
+        <!-- Transactions List -->
+        <div class="bg-white rounded-2xl widget-shadow p-8">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-800" id="transactionsTitle">Son İşlemler</h2>
+                <button id="clearAll" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-xl font-medium transition-colors">
+                    <span id="clearButtonText">🗑️ Tümünü Temizle</span>
+                </button>
+            </div>
+            
+            <div id="transactionsList" class="space-y-3">
+                <div class="text-center text-gray-500 py-8">
+                    <span class="text-4xl mb-4 block">📊</span>
+                    <p id="noTransactionsText">Henüz işlem bulunmuyor. İlk işleminizi ekleyin!</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Çeviri verileri
+        const translations = {
+            tr: {
+                mainTitle: "💰 Bütçe Takip Sistemi",
+                mainSubtitle: "Gelir ve giderlerinizi profesyonelce yönetin",
+                incomeTitle: "Toplam Gelir",
+                expenseTitle: "Toplam Gider",
+                balanceTitle: "Net Bakiye",
+                dailyAverageTitle: "Günlük Ortalama",
+                accountsTitle: "Hesaplar",
+                debtsTitle: "Borçlar",
+                addAccountText: "+ Hesap Ekle",
+                addDebtText: "+ Borç Ekle",
+                noAccountsText: "Henüz hesap eklenmemiş",
+                noDebtsText: "Borç bulunmuyor",
+                addTransactionTitle: "Yeni İşlem Ekle",
+                recurringText: "🔄 Sabit İşlem",
+                descriptionLabel: "Açıklama",
+                amountLabel: "Tutar",
+                typeLabel: "Tür",
+                categoryLabel: "Kategori",
+                accountLabel: "Hesap",
+                frequencyLabel: "Sıklık",
+                incomeOption: "Gelir",
+                expenseOption: "Gider",
+                salaryOption: "Maaş",
+                foodOption: "Yemek",
+                transportOption: "Ulaşım",
+                entertainmentOption: "Eğlence",
+                billsOption: "Faturalar",
+                otherOption: "Diğer",
+                cashOption: "💵 Nakit",
+                monthlyOption: "Aylık",
+                weeklyOption: "Haftalık",
+                dailyOption: "Günlük",
+                addButtonText: "➕ İşlem Ekle",
+                addRecurringText: "🔄 Sabit İşlem Ekle",
+                transactionsTitle: "Son İşlemler",
+                clearButtonText: "🗑️ Tümünü Temizle",
+                noTransactionsText: "Henüz işlem bulunmuyor. İlk işleminizi ekleyin!",
+                deleteText: "Sil",
+                editText: "Düzenle",
+                saveText: "Kaydet",
+                cancelText: "İptal"
+            },
+            en: {
+                mainTitle: "💰 Budget Tracking System",
+                mainSubtitle: "Manage your income and expenses professionally",
+                incomeTitle: "Total Income",
+                expenseTitle: "Total Expenses",
+                balanceTitle: "Net Balance",
+                dailyAverageTitle: "Daily Average",
+                accountsTitle: "Accounts",
+                debtsTitle: "Debts",
+                addAccountText: "+ Add Account",
+                addDebtText: "+ Add Debt",
+                noAccountsText: "No accounts added yet",
+                noDebtsText: "No debts found",
+                addTransactionTitle: "Add New Transaction",
+                recurringText: "🔄 Recurring",
+                descriptionLabel: "Description",
+                amountLabel: "Amount",
+                typeLabel: "Type",
+                categoryLabel: "Category",
+                accountLabel: "Account",
+                frequencyLabel: "Frequency",
+                incomeOption: "Income",
+                expenseOption: "Expense",
+                salaryOption: "Salary",
+                foodOption: "Food",
+                transportOption: "Transport",
+                entertainmentOption: "Entertainment",
+                billsOption: "Bills",
+                otherOption: "Other",
+                cashOption: "💵 Cash",
+                monthlyOption: "Monthly",
+                weeklyOption: "Weekly",
+                dailyOption: "Daily",
+                addButtonText: "➕ Add Transaction",
+                addRecurringText: "🔄 Add Recurring",
+                transactionsTitle: "Recent Transactions",
+                clearButtonText: "🗑️ Clear All",
+                noTransactionsText: "No transactions yet. Add your first transaction!",
+                deleteText: "Delete",
+                editText: "Edit",
+                saveText: "Save",
+                cancelText: "Cancel"
+            },
+            de: {
+                mainTitle: "💰 Budget-Tracking-System",
+                mainSubtitle: "Verwalten Sie Ihre Einnahmen und Ausgaben professionell",
+                incomeTitle: "Gesamteinkommen",
+                expenseTitle: "Gesamtausgaben",
+                balanceTitle: "Nettosaldo",
+                dailyAverageTitle: "Tagesdurchschnitt",
+                accountsTitle: "Konten",
+                debtsTitle: "Schulden",
+                addAccountText: "+ Konto hinzufügen",
+                addDebtText: "+ Schuld hinzufügen",
+                noAccountsText: "Noch keine Konten hinzugefügt",
+                noDebtsText: "Keine Schulden gefunden",
+                addTransactionTitle: "Neue Transaktion hinzufügen",
+                recurringText: "🔄 Wiederkehrend",
+                descriptionLabel: "Beschreibung",
+                amountLabel: "Betrag",
+                typeLabel: "Typ",
+                categoryLabel: "Kategorie",
+                accountLabel: "Konto",
+                frequencyLabel: "Häufigkeit",
+                incomeOption: "Einkommen",
+                expenseOption: "Ausgabe",
+                salaryOption: "Gehalt",
+                foodOption: "Essen",
+                transportOption: "Transport",
+                entertainmentOption: "Unterhaltung",
+                billsOption: "Rechnungen",
+                otherOption: "Andere",
+                cashOption: "💵 Bargeld",
+                monthlyOption: "Monatlich",
+                weeklyOption: "Wöchentlich",
+                dailyOption: "Täglich",
+                addButtonText: "➕ Transaktion hinzufügen",
+                addRecurringText: "🔄 Wiederkehrend hinzufügen",
+                transactionsTitle: "Letzte Transaktionen",
+                clearButtonText: "🗑️ Alle löschen",
+                noTransactionsText: "Noch keine Transaktionen. Fügen Sie Ihre erste Transaktion hinzu!",
+                deleteText: "Löschen",
+                editText: "Bearbeiten",
+                saveText: "Speichern",
+                cancelText: "Abbrechen"
+            }
+        };
+        
+        // Para birimi sembolleri
+        const currencySymbols = {
+            'TRY': '₺',
+            'EUR': '€',
+            'USD': '$'
+        };
+        
+        // Global değişkenler
+        let currentLanguage = 'tr';
+        let currentCurrency = 'TRY';
+        let transactions = JSON.parse(localStorage.getItem('budgetTransactions')) || [];
+        let accounts = JSON.parse(localStorage.getItem('budgetAccounts')) || [];
+        let debts = JSON.parse(localStorage.getItem('budgetDebts')) || [];
+        let recurringTransactions = JSON.parse(localStorage.getItem('recurringTransactions')) || [];
+        let isRecurringMode = false;
+        
+        // DOM elementleri
+        const languageSelect = document.getElementById('languageSelect');
+        const currencySelect = document.getElementById('currencySelect');
+        const descriptionInput = document.getElementById('description');
+        const amountInput = document.getElementById('amount');
+        const typeSelect = document.getElementById('type');
+        const categorySelect = document.getElementById('category');
+        const accountSelect = document.getElementById('accountSelect');
+        const frequencySelect = document.getElementById('frequency');
+        const addTransactionBtn = document.getElementById('addTransaction');
+        const addRecurringBtn = document.getElementById('addRecurring');
+        const recurringBtn = document.getElementById('recurringBtn');
+        const recurringOptions = document.getElementById('recurringOptions');
+        const clearAllBtn = document.getElementById('clearAll');
+        const transactionsList = document.getElementById('transactionsList');
+        const addAccountBtn = document.getElementById('addAccountBtn');
+        const addDebtBtn = document.getElementById('addDebtBtn');
+        const accountsList = document.getElementById('accountsList');
+        const debtsList = document.getElementById('debtsList');
+        
+        // Dil değiştirme
+        function changeLanguage(lang) {
+            currentLanguage = lang;
+            const t = translations[lang];
+            
+            // Tüm metinleri güncelle
+            Object.keys(t).forEach(key => {
+                const element = document.getElementById(key);
+                if (element) {
+                    element.textContent = t[key];
+                }
+            });
+            
+            // Placeholder'ları güncelle
+            if (lang === 'tr') {
+                descriptionInput.placeholder = "İşlem açıklaması...";
+            } else if (lang === 'en') {
+                descriptionInput.placeholder = "Transaction description...";
+            } else {
+                descriptionInput.placeholder = "Transaktionsbeschreibung...";
+            }
+            
+            updateSummary();
+            renderTransactions();
+        }
+        
+        // Para birimi değiştirme
+        function changeCurrency(currency) {
+            currentCurrency = currency;
+            updateSummary();
+            renderTransactions();
+        }
+        
+        // Tutar formatla
+        function formatAmount(amount) {
+            const symbol = currencySymbols[currentCurrency];
+            return `${symbol}${parseFloat(amount).toFixed(2)}`;
+        }
+        
+        // Özet güncelle
+        function updateSummary() {
+            const income = transactions
+                .filter(t => t.type === 'income')
+                .reduce((sum, t) => sum + parseFloat(t.amount), 0);
+                
+            const expense = transactions
+                .filter(t => t.type === 'expense')
+                .reduce((sum, t) => sum + parseFloat(t.amount), 0);
+                
+            const balance = income - expense;
+            
+            // Günlük ortalama hesapla (son 30 gün)
+            const thirtyDaysAgo = new Date();
+            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+            
+            const recentExpenses = transactions
+                .filter(t => t.type === 'expense' && new Date(t.date) >= thirtyDaysAgo)
+                .reduce((sum, t) => sum + parseFloat(t.amount), 0);
+            
+            const dailyAverage = recentExpenses / 30;
+            
+            document.getElementById('totalIncome').textContent = formatAmount(income);
+            document.getElementById('totalExpense').textContent = formatAmount(expense);
+            document.getElementById('netBalance').textContent = formatAmount(balance);
+            document.getElementById('dailyAverage').textContent = formatAmount(dailyAverage);
+            
+            // Bakiye rengini güncelle
+            const balanceElement = document.getElementById('netBalance');
+            const balanceCard = balanceElement.closest('div');
+            if (balance >= 0) {
+                balanceCard.className = balanceCard.className.replace('expense-gradient', 'balance-gradient');
+            } else {
+                balanceCard.className = balanceCard.className.replace('balance-gradient', 'expense-gradient');
+            }
+        }
+        
+        // İşlemleri render et
+        function renderTransactions() {
+            if (transactions.length === 0) {
+                transactionsList.innerHTML = `
+                    <div class="text-center text-gray-500 py-8">
+                        <span class="text-4xl mb-4 block">📊</span>
+                        <p>${translations[currentLanguage].noTransactionsText}</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            const sortedTransactions = [...transactions].reverse();
+            
+            transactionsList.innerHTML = sortedTransactions.map((transaction, index) => {
+                const isIncome = transaction.type === 'income';
+                const bgColor = isIncome ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200';
+                const textColor = isIncome ? 'text-green-600' : 'text-red-600';
+                const icon = isIncome ? '📈' : '📉';
+                
+                return `
+                    <div class="transaction-item ${bgColor} border-2 rounded-xl p-4 flex items-center justify-between animate-slide-up">
+                        <div class="flex items-center space-x-4">
+                            <div class="text-2xl">${icon}</div>
+                            <div>
+                                <h4 class="font-semibold text-gray-800">${transaction.description}</h4>
+                                <p class="text-sm text-gray-600">${getCategoryName(transaction.category)} • ${new Date(transaction.date).toLocaleDateString()}</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <span class="text-xl font-bold ${textColor}">${formatAmount(transaction.amount)}</span>
+                            <button onclick="deleteTransaction(${transactions.length - 1 - index})" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-lg text-sm transition-colors">
+                                ${translations[currentLanguage].deleteText}
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        // Kategori adını al
+        function getCategoryName(category) {
+            const categoryMap = {
+                'salary': translations[currentLanguage].salaryOption,
+                'food': translations[currentLanguage].foodOption,
+                'transport': translations[currentLanguage].transportOption,
+                'entertainment': translations[currentLanguage].entertainmentOption,
+                'bills': translations[currentLanguage].billsOption,
+                'other': translations[currentLanguage].otherOption
+            };
+            return categoryMap[category] || category;
+        }
+        
+        // İşlem ekle
+        function addTransaction() {
+            const description = descriptionInput.value.trim();
+            const amount = parseFloat(amountInput.value);
+            const type = typeSelect.value;
+            const category = categorySelect.value;
+            const account = accountSelect.value;
+            
+            if (!description || !amount || amount <= 0) {
+                alert('Lütfen tüm alanları doğru şekilde doldurun!');
+                return;
+            }
+            
+            const transaction = {
+                id: Date.now(),
+                description,
+                amount,
+                type,
+                category,
+                account,
+                currency: currentCurrency,
+                date: new Date().toISOString()
+            };
+            
+            transactions.push(transaction);
+            localStorage.setItem('budgetTransactions', JSON.stringify(transactions));
+            
+            // Hesap bakiyesini güncelle
+            if (account !== 'cash') {
+                const accountIndex = accounts.findIndex(acc => acc.id == account);
+                if (accountIndex !== -1) {
+                    if (type === 'income') {
+                        accounts[accountIndex].balance += amount;
+                    } else {
+                        accounts[accountIndex].balance -= amount;
+                    }
+                    localStorage.setItem('budgetAccounts', JSON.stringify(accounts));
+                    renderAccounts();
+                }
+            }
+            
+            // Formu temizle
+            descriptionInput.value = '';
+            amountInput.value = '';
+            
+            updateSummary();
+            renderTransactions();
+        }
+        
+        // İşlem sil
+        function deleteTransaction(index) {
+            transactions.splice(index, 1);
+            localStorage.setItem('budgetTransactions', JSON.stringify(transactions));
+            updateSummary();
+            renderTransactions();
+        }
+        
+        // Tümünü temizle
+        function clearAllTransactions() {
+            if (confirm('Tüm işlemleri silmek istediğinizden emin misiniz?')) {
+                transactions = [];
+                localStorage.removeItem('budgetTransactions');
+                updateSummary();
+                renderTransactions();
+            }
+        }
+        
+        // Hesap ekleme
+        function addAccount() {
+            const name = prompt('Hesap adı:');
+            const type = prompt('Hesap türü (banka/nakit):') || 'banka';
+            const balance = parseFloat(prompt('Başlangıç bakiyesi:') || '0');
+            
+            if (name) {
+                const account = {
+                    id: Date.now(),
+                    name,
+                    type,
+                    balance,
+                    currency: currentCurrency
+                };
+                
+                accounts.push(account);
+                localStorage.setItem('budgetAccounts', JSON.stringify(accounts));
+                renderAccounts();
+                updateAccountSelect();
+            }
+        }
+        
+        // Borç ekleme
+        function addDebt() {
+            const name = prompt('Borç adı:');
+            const amount = parseFloat(prompt('Borç miktarı:') || '0');
+            const interestRate = parseFloat(prompt('Faiz oranı (yıllık %):') || '0');
+            
+            if (name && amount > 0) {
+                const debt = {
+                    id: Date.now(),
+                    name,
+                    amount,
+                    originalAmount: amount,
+                    interestRate,
+                    currency: currentCurrency,
+                    date: new Date().toISOString()
+                };
+                
+                debts.push(debt);
+                localStorage.setItem('budgetDebts', JSON.stringify(debts));
+                renderDebts();
+            }
+        }
+        
+        // Hesapları render et
+        function renderAccounts() {
+            if (accounts.length === 0) {
+                accountsList.innerHTML = `
+                    <div class="text-center text-gray-500 py-4">
+                        <span class="text-2xl mb-2 block">🏦</span>
+                        <p>${translations[currentLanguage].noAccountsText}</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            accountsList.innerHTML = accounts.map(account => {
+                const icon = account.type === 'nakit' ? '💵' : '🏦';
+                return `
+                    <div class="bg-gray-50 border border-gray-200 rounded-lg p-3 flex justify-between items-center">
+                        <div class="flex items-center space-x-3">
+                            <span class="text-xl">${icon}</span>
+                            <div>
+                                <h4 class="font-medium text-gray-800">${account.name}</h4>
+                                <p class="text-sm text-gray-600">${formatAmount(account.balance)}</p>
+                            </div>
+                        </div>
+                        <button onclick="deleteAccount(${account.id})" class="text-red-500 hover:text-red-700 text-sm">
+                            ${translations[currentLanguage].deleteText}
+                        </button>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        // Borçları render et
+        function renderDebts() {
+            if (debts.length === 0) {
+                debtsList.innerHTML = `
+                    <div class="text-center text-gray-500 py-4">
+                        <span class="text-2xl mb-2 block">💳</span>
+                        <p>${translations[currentLanguage].noDebtsText}</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            debtsList.innerHTML = debts.map(debt => `
+                <div class="bg-red-50 border border-red-200 rounded-lg p-3 flex justify-between items-center">
+                    <div class="flex items-center space-x-3">
+                        <span class="text-xl">💳</span>
+                        <div>
+                            <h4 class="font-medium text-gray-800">${debt.name}</h4>
+                            <p class="text-sm text-red-600">${formatAmount(debt.amount)}</p>
+                            <p class="text-xs text-gray-500">%${debt.interestRate} faiz</p>
+                        </div>
+                    </div>
+                    <button onclick="deleteDebt(${debt.id})" class="text-red-500 hover:text-red-700 text-sm">
+                        ${translations[currentLanguage].deleteText}
+                    </button>
+                </div>
+            `).join('');
+        }
+        
+        // Hesap seçeneklerini güncelle
+        function updateAccountSelect() {
+            const cashOption = `<option value="cash">${translations[currentLanguage].cashOption}</option>`;
+            const accountOptions = accounts.map(account => 
+                `<option value="${account.id}">${account.type === 'nakit' ? '💵' : '🏦'} ${account.name}</option>`
+            ).join('');
+            
+            accountSelect.innerHTML = cashOption + accountOptions;
+        }
+        
+        // Sabit işlem modu değiştir
+        function toggleRecurringMode() {
+            isRecurringMode = !isRecurringMode;
+            
+            if (isRecurringMode) {
+                recurringOptions.classList.remove('hidden');
+                addTransactionBtn.classList.add('hidden');
+                addRecurringBtn.classList.remove('hidden');
+                recurringBtn.classList.add('bg-purple-600');
+            } else {
+                recurringOptions.classList.add('hidden');
+                addTransactionBtn.classList.remove('hidden');
+                addRecurringBtn.classList.add('hidden');
+                recurringBtn.classList.remove('bg-purple-600');
+            }
+        }
+        
+        // Sabit işlem ekle
+        function addRecurringTransaction() {
+            const description = descriptionInput.value.trim();
+            const amount = parseFloat(amountInput.value);
+            const type = typeSelect.value;
+            const category = categorySelect.value;
+            const frequency = frequencySelect.value;
+            const account = accountSelect.value;
+            
+            if (!description || !amount || amount <= 0) {
+                alert('Lütfen tüm alanları doğru şekilde doldurun!');
+                return;
+            }
+            
+            const recurringTransaction = {
+                id: Date.now(),
+                description,
+                amount,
+                type,
+                category,
+                account,
+                frequency,
+                currency: currentCurrency,
+                nextDate: new Date().toISOString(),
+                active: true
+            };
+            
+            recurringTransactions.push(recurringTransaction);
+            localStorage.setItem('recurringTransactions', JSON.stringify(recurringTransactions));
+            
+            // Formu temizle
+            descriptionInput.value = '';
+            amountInput.value = '';
+            
+            alert('Sabit işlem eklendi!');
+        }
+        
+        // Hesap sil
+        function deleteAccount(id) {
+            accounts = accounts.filter(account => account.id !== id);
+            localStorage.setItem('budgetAccounts', JSON.stringify(accounts));
+            renderAccounts();
+            updateAccountSelect();
+        }
+        
+        // Borç sil
+        function deleteDebt(id) {
+            debts = debts.filter(debt => debt.id !== id);
+            localStorage.setItem('budgetDebts', JSON.stringify(debts));
+            renderDebts();
+        }
+        
+        // Event listeners
+        languageSelect.addEventListener('change', (e) => changeLanguage(e.target.value));
+        currencySelect.addEventListener('change', (e) => changeCurrency(e.target.value));
+        addTransactionBtn.addEventListener('click', addTransaction);
+        addRecurringBtn.addEventListener('click', addRecurringTransaction);
+        recurringBtn.addEventListener('click', toggleRecurringMode);
+        addAccountBtn.addEventListener('click', addAccount);
+        addDebtBtn.addEventListener('click', addDebt);
+        clearAllBtn.addEventListener('click', clearAllTransactions);
+        
+        // Enter tuşu ile işlem ekleme
+        [descriptionInput, amountInput].forEach(input => {
+            input.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    if (isRecurringMode) {
+                        addRecurringTransaction();
+                    } else {
+                        addTransaction();
+                    }
+                }
+            });
+        });
+        
+        // Sayfa yüklendiğinde
+        document.addEventListener('DOMContentLoaded', () => {
+            updateSummary();
+            renderTransactions();
+            renderAccounts();
+            renderDebts();
+            updateAccountSelect();
+        });
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9734e983a0fbd0d0',t:'MTc1NTg5MjM2My4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
